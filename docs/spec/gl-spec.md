@@ -184,7 +184,9 @@ Autolinks can also be constructed without requiring the use of `<` and to `>` to
 
 ##### Trailing punctuation and balancing
 
-Trailing punctuation (specifically, `?`, `!`, `.`, `,`, `:`, `*`, `_`, and `~`) will not be considered part of the autolink, though they may be included in the interior of the link.
+Trailing punctuation (specifically, `?`, `!`, `.`, `,`, `:`, `*`, `_`, `~`, `'`, and `"`) will not be considered part of the autolink, though they may be included in the interior of the link.
+
+The parser also strips a terminal `;` when it completes an apparent HTML entity (for example, `&amp;`), mirroring the GitHub Flavored Markdown autolink rules.
 
 When an autolink ends in `)`, we scan the entire autolink for the total number of parentheses. If there is a greater number of closing parentheses than opening ones, we don’t consider the unmatched trailing parentheses part of the autolink, in order to facilitate including an autolink inside a parenthesis. This check is only done when the link ends in a closing parentheses `)`, so if the only parentheses are in the interior of the autolink, no special rules are applied.
 
