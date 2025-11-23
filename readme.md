@@ -15,3 +15,9 @@ Status: planned
 When you add a link to a file line like `gl:docs/spec/gl-spec.md#L59`, after some time the referenced file will change. To keep the link valid and pointing to the same content, you can use the repo-git-links-fix tool that will update all links in your repository to point to the correct line numbers. 
 
 How? When a link is added and committed to the main repo branch, it is considered valid. In the meantime, lines are added or removed before the linked line. Since your git history knows when the link was added and when lines were added or removed, you can calculate the correct line number for the link.
+
+## gl: git-links projects
+
+### VS Code extension mj41.gl-git-links
+
+Visual Studio Code extension [mj41.gl-git-links](https://marketplace.visualstudio.com/items?itemName=mj41.gl-git-links) for `gl:` git link syntax. Source code: [mj41/vscode-gl-git-links](https://github.com/mj41/vscode-gl-git-links).
