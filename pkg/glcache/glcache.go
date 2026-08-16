@@ -48,6 +48,7 @@ type Link struct {
 	TargetFile         string  `json:"target_file"`
 	TargetFileOriginal string  `json:"target_file_original"`
 	TrackedLine        int     `json:"tracked_line"`
+	TrackedEndLine     int     `json:"tracked_end_line,omitempty"` // For ranges like #L10-L20
 	LineContentHash    string  `json:"line_content_hash"`
 	History            History `json:"history"`
 }
@@ -88,6 +89,17 @@ const (
 type DiscoverOptions struct {
 	IncludeUntracked bool // Include untracked files in discovery
 }
+
+// LinkRe matches a gl: link carrying a line spec: path, start line, optional
+// end line. It is exported so there is exactly ONE grammar in this module —
+// cmd/git-glfix used to keep a second copy, and the two had drifted apart:
+// this one had no range group at all, so the library reported a range as a
+// single-line link, and both accepted "#L0" and "#L007", which
+// docs/spec/gl-spec.md excludes by requiring a non-zero first digit.
+//
+// The line spec is required. A link without one has no line to track, and
+// nothing in this module should invent one for it.
+var LinkRe = regexp.MustCompile(`gl:(\S+?)#L([1-9][0-9]*)(?:-L([1-9][0-9]*))?`)
 
 // =============================================================================
 // Public API - Cache Operations
@@ -228,7 +240,6 @@ func DiscoverLinks(opts DiscoverOptions) ([]Link, error) {
 		return nil, err
 	}
 
-	re := regexp.MustCompile(`gl:(\S+?)#L(\d+)`)
 	var links []Link
 	nextID := 1
 
@@ -244,15 +255,19 @@ func DiscoverLinks(opts DiscoverOptions) ([]Link, error) {
 
 		lines := strings.Split(string(content), "\n")
 		for lineNum, line := range lines {
-			matches := re.FindAllStringSubmatchIndex(line, -1)
-			for _, match := range matches {
-				if len(match) < 6 {
-					continue
-				}
+			for _, match := range LinkRe.FindAllStringSubmatch(line, -1) {
+				targetPathRaw := match[1]
+				targetLine, _ := strconv.Atoi(match[2])
 
-				targetPathRaw := line[match[2]:match[3]]
-				targetLineStr := line[match[4]:match[5]]
-				targetLine, _ := strconv.Atoi(targetLineStr)
+				// Ranges were dropped here entirely: the old pattern had no
+				// second group, so a link written #L4-L9 came back as a plain
+				// link to line 4 and the range vanished without a word. Consumers
+				// building back-references got a link that pointed somewhere
+				// narrower than the author wrote.
+				var targetEndLine int
+				if match[3] != "" {
+					targetEndLine, _ = strconv.Atoi(match[3])
+				}
 
 				targetPath := resolvePath(file, targetPathRaw)
 
@@ -263,6 +278,7 @@ func DiscoverLinks(opts DiscoverOptions) ([]Link, error) {
 					TargetFile:         targetPath,
 					TargetFileOriginal: targetPathRaw,
 					TrackedLine:        targetLine,
+					TrackedEndLine:     targetEndLine,
 				})
 				nextID++
 			}

@@ -28,6 +28,46 @@ The `gl-exA` repo has **30 commits** implementing comprehensive test scenarios.
 
 ---
 
+## What is actually asserted
+
+Thirty commits, thirty TC entries below — but a TC is a *scenario*, not
+necessarily an assertion. **23 of the 30 commits carry a `gl-test.json`** and are
+checked; the other seven build the repository up and assert nothing:
+
+| commit | subject |
+| --- | --- |
+| `39ef7fc` | Repo initialization and simple readme |
+| `8f71e3e` | Adding simple spec my-tiny-spec.md |
+| `c93c24e` | Implement v0.0.1 |
+| `a3d7f77` | Change docs |
+| `54949bc` | Update spec with intro |
+| `654caff` | Add test target |
+| `88546a7` | Add test link |
+
+That is the right split — there is nothing to check until a link exists and a
+target has moved — but "30 test cases" reads as 30 assertions, and it is 23.
+
+There is a second suite the count above does not include: `--test-cache`, five
+tests over snapshot creation, loading, incremental tracking, clear/rebuild and
+ancestor selection. They live in the harness rather than in `gl-test.json`
+because they assert on `.git/gl-links/` rather than on link output. `make test`
+runs both.
+
+### Known gap: no range is tested
+
+`#L10-L20` links are tracked by the tool and returned by the library, and
+**nothing in this suite exercises one**. The obstacle was mechanical:
+`ExpectedLink` in the harness has `old` and `new` but no end-line fields, and
+`--json` did not emit the range end either, so a range case had nothing to
+assert against.
+
+`--json` now reports `old_end_line` and `new_end_line`. Closing the gap means
+adding those two fields to `ExpectedLink`, then a commit in `gl-exA` that moves
+a range — insertions above it, and insertions inside it, which are different
+cases. Until then the range logic is covered only by the unit tests in
+`cmd/git-glfix/main_test.go` and `pkg/glcache/glcache_test.go`, which pin the
+grammar and the hunk arithmetic but not the end-to-end rewrite.
+
 ## Test Cases
 
 ### TC-001: Repository Initialization

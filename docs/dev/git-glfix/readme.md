@@ -24,6 +24,11 @@ git-glfix-test --repo <path> --tool <path> --test-cache [--verbose]
 * `--stop-on-fail`: Stop execution on first test failure
 * `--test-cache`: Run incremental caching tests instead of algorithm tests
 
+Both suites run from the repository root with `make test`, which builds the two
+binaries first. They need `../gl-exA` beside this checkout, and they refuse to
+start if it has uncommitted changes: the harness checks out historical commits
+and lets git-glfix rewrite files there, so it cannot tell your work from its own.
+
 ### Algorithm Tests (default)
 
 Walks through each commit in the test repository, runs the tool, and compares JSON output against expected results defined in `gl-test.json`.

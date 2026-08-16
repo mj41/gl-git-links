@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mj41/gl-git-links/pkg/glcache"
 	"github.com/mj41/gl-git-links/pkg/version"
 )
 
@@ -258,10 +259,14 @@ Subcommands:
     unset <key>       Remove a configuration value
 
 Configuration keys:
-    retention-days           Days to keep daily snapshots (default: 7)
-    retention-months         Months to keep monthly snapshots (default: 1)
-    modification-threshold   Percentage change to trigger warning (default: 30)
-    rename-threshold         Similarity threshold for rename detection (default: 50)
+    retention-days           Days of snapshots 'cache prune' keeps (default: 7)
+    modification-threshold   Percent of a line that may change before the link
+                             is reported modified rather than followed (default: 30)
+
+Parsed, but nothing acts on them yet:
+    rename-threshold         Intended for rename detection (default: 50)
+    track-branch             Authoritative branches (multi-valued, default: main)
+    track-feature-branches   Feature branches to track (default: 5)
 `)
 	default:
 		fmt.Fprintf(os.Stderr, "git-glfix: '%s' is not a git-glfix command. See 'git-glfix --help'.\n", cmd)
@@ -788,6 +793,22 @@ func parseDiffHunks(diff string) []Hunk {
 	return hunks
 }
 
+// linkRe is the module's single link grammar, from pkg/glcache.
+//
+// It used to be a second copy declared here, and the copies had drifted: this
+// one grew range support, the library's never did, so the same text parsed
+// differently depending on which entry point read it. Both also accepted "#L0"
+// and "#L007", which docs/spec/gl-spec.md excludes -- the first was tracked as
+// line zero and reported broken forever, the second was read as line 7 and then
+// REWRITTEN to a plain number, silently editing a link the spec does not
+// consider a line link at all.
+//
+// Trailing punctuation needs no handling here: the path is non-greedy up to
+// "#L" and the digits stop at the first non-digit, so a link ending a sentence
+// leaves the full stop alone. That is the §3.2.2 rule for this shape, by
+// construction.
+var linkRe = glcache.LinkRe
+
 type Hunk struct {
 	OldStart int
 	OldCount int
@@ -863,8 +884,7 @@ func discoverLinks() ([]Link, error) {
 		return nil, err
 	}
 
-	// Match gl:path#L10 or gl:path#L10-L20 (ranges)
-	re := regexp.MustCompile(`gl:(\S+?)#L(\d+)(?:-L(\d+))?`)
+	re := linkRe
 	var links []Link
 	nextID := 1
 
@@ -1866,7 +1886,7 @@ func runValidateCommand() {
 
 		// Validate end line if this is a range
 		if link.TrackedEndLine > 0 {
-			if link.TrackedEndLine <= 0 || link.TrackedEndLine > len(lines) {
+			if link.TrackedEndLine > len(lines) {
 				fmt.Printf("BROKEN: %s:%d -> %s#L%d-L%d (end line out of range, max %d)\n",
 					link.SourceFile, link.SourceLine, link.TargetFile, link.TrackedLine, link.TrackedEndLine, len(lines))
 				broken++
@@ -1885,4 +1905,11 @@ func runValidateCommand() {
 	}
 
 	fmt.Printf("\nValidation: %d valid, %d broken\n", valid, broken)
+
+	// A checker that cannot fail is decoration. This exited 0 while printing
+	// BROKEN for every link it found, so no hook, no CI job and no `&&` chain
+	// could ever act on it.
+	if broken > 0 {
+		os.Exit(1)
+	}
 }

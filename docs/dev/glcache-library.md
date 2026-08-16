@@ -129,7 +129,8 @@ type Link struct {
     SourceLine         int     // Line number in source
     TargetFile         string  // File being referenced
     TargetFileOriginal string  // Original path as written
-    TrackedLine        int     // Line number in target
+    TrackedLine        int     // Line number in target (start, for a range)
+    TrackedEndLine     int     // End line for a range link; 0 for a single line
     LineContentHash    string  // MD5 of line content
     History            History // Origin and modifications
 }
@@ -138,6 +139,24 @@ type DiscoverOptions struct {
     IncludeUntracked bool // Include untracked/uncommitted files
 }
 ```
+
+### Link grammar
+
+```go
+var LinkRe = regexp.MustCompile(`gl:(\S+?)#L([1-9][0-9]*)(?:-L([1-9][0-9]*))?`)
+```
+
+`LinkRe` is exported so this module has exactly one definition of what a link
+is. `cmd/git-glfix` used to keep a second copy, and they had drifted: the tool
+grew range support, this package never did, so the same text parsed differently
+depending on which entry point read it — a range came back through
+`DiscoverLinks` as a single-line link to its first line, with nothing to signal
+the loss.
+
+Groups are path, start line, end line (empty for a single line). The grammar is
+the specification's: the first digit is non-zero, so `#L0` and `#L007` are not
+line links and are not returned. A link with no line spec is not returned
+either — there is no line to track.
 
 ### Functions
 

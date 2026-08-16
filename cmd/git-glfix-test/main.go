@@ -46,7 +46,7 @@ type ExpectedLink struct {
 }
 
 // ActualLink is the output from git-glfix --json
-// gl:cmd/git-glfix/main.go#L1555 - JSON output structure
+// gl:cmd/git-glfix/main.go#L1575 - JSON output structure
 type ActualLink struct {
 	File    string `json:"file"`
 	Line    int    `json:"line"`

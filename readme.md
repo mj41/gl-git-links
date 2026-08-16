@@ -41,7 +41,7 @@ backlinks, _ := glcache.QueryLinksByTarget("docs/README.md",
 
 - Documentation: [docs/dev/glcache-library.md](docs/dev/glcache-library.md)
 
-**Use case:** Generate back-reference documentation showing which files link to each documentation page (see [ipm-drawio md-back-refs integration](../ipm-drawio/wip/md-back-refs/spec.md)).
+**Use case:** Generate back-reference documentation showing which files link to each documentation page — for each doc, the set of files pointing at it, and at which lines.
 
 ### gl-exA example repository
 
