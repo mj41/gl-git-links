@@ -10,40 +10,40 @@ algorithm with snapshot caching as specified in gl:docs/spec/git-glfix/increment
 
 ## Main Workflow
 
-The tool executes in four phases (gl:cmd/git-glfix/main.go#L174):
+The tool executes in four phases (gl:cmd/git-glfix/main.go#L277):
 
 ### Phase 1: Link Discovery
 
-Function: `discoverLinks()` (gl:cmd/git-glfix/main.go#L741)
+Function: `discoverLinks()` (gl:cmd/git-glfix/main.go#L860)
 
 1. Get all git-tracked files via `git ls-files`
-2. Filter out binary files using null-byte detection (gl:cmd/git-glfix/main.go#L791)
+2. Filter out binary files using null-byte detection (gl:cmd/git-glfix/main.go#L917)
 3. Scan each file for `gl:` pattern with line numbers
-4. Resolve relative paths to absolute repository paths (gl:cmd/git-glfix/main.go#L808)
+4. Resolve relative paths to absolute repository paths (gl:cmd/git-glfix/main.go#L934)
 
 Pattern used: `gl:(\S+?)#L(\d+)` matching the gl: URI scheme (gl:docs/spec/gl-spec.md#L22)
 
 ### Phase 2: Snapshot Selection & Incremental Tracking
 
-Function: `selectBestSnapshot()` (gl:cmd/git-glfix/main.go#L500)
+Function: `selectBestSnapshot()` (gl:cmd/git-glfix/main.go#L603)
 
 The tool selects an existing snapshot to track from (prefers same branch, then ancestor commits).
 
-Function: `trackIncrementally()` (gl:cmd/git-glfix/main.go#L549)
+Function: `trackIncrementally()` (gl:cmd/git-glfix/main.go#L652)
 
 For cached links, track changes commit-by-commit from snapshot to HEAD.
 
-Function: `initializeNewLink()` (gl:cmd/git-glfix/main.go#L916)
+Function: `initializeNewLink()` (gl:cmd/git-glfix/main.go#L1076)
 
 For new (undiscovered) links:
 
-1. **Get Origin Commit**: Use `git blame` to find when the link was added (gl:cmd/git-glfix/main.go#L973)
+1. **Get Origin Commit**: Use `git blame` to find when the link was added (gl:cmd/git-glfix/main.go#L1159)
 2. **Verify Target Exists**: Check target file exists on filesystem
-3. **Track to HEAD**: Use `git blame --reverse` to trace line movement (gl:cmd/git-glfix/main.go#L990)
+3. **Track to HEAD**: Use `git blame --reverse` to trace line movement (gl:cmd/git-glfix/main.go#L1176)
 
 ### Phase 3: Update Application
 
-Function: `applyUpdates()` (gl:cmd/git-glfix/main.go#L1192)
+Function: `applyUpdates()` (gl:cmd/git-glfix/main.go#L1406)
 
 1. Group updates by source file
 2. For dry-run: print proposed changes
@@ -51,33 +51,33 @@ Function: `applyUpdates()` (gl:cmd/git-glfix/main.go#L1192)
 
 ### Phase 4: Reporting
 
-Function: `reportResults()` (gl:cmd/git-glfix/main.go#L1289)
+Function: `reportResults()` (gl:cmd/git-glfix/main.go#L1518)
 
 Output formats:
 - Human-readable summary to stdout
-- JSON format for CI integration (gl:cmd/git-glfix/main.go#L1325)
+- JSON format for CI integration (gl:cmd/git-glfix/main.go#L1554)
 
 ## Git Commands Used
 
 | Command | Purpose | Used In |
 |---------|---------|---------|
-| `git ls-files` | Get tracked files | `getTrackedFiles()` (gl:cmd/git-glfix/main.go#L328) |
-| `git blame -L` | Get origin commit | `getOriginCommit()` (gl:cmd/git-glfix/main.go#L973) |
-| `git blame --reverse` | Track line forward | `trackLineToHead()` (gl:cmd/git-glfix/main.go#L990) |
-| `git blame HEAD` | Get HEAD line origin | `trackHeadToWorkTree()` (gl:cmd/git-glfix/main.go#L1166) |
-| `git blame` (no ref) | Get worktree blame | `trackHeadToWorkTree()` (gl:cmd/git-glfix/main.go#L1166) |
-| `git log --reverse` | Find next commit | `recoverLostLine()` (gl:cmd/git-glfix/main.go#L1032) |
-| `git diff -U0` | Get line-level diff | `recoverLostLine()` (gl:cmd/git-glfix/main.go#L1087) |
+| `git ls-files` | Get tracked files | `getTrackedFiles()` (gl:cmd/git-glfix/main.go#L431) |
+| `git blame -L` | Get origin commit | `getOriginCommit()` (gl:cmd/git-glfix/main.go#L1159) |
+| `git blame --reverse` | Track line forward | `trackLineToHead()` (gl:cmd/git-glfix/main.go#L1176) |
+| `git blame HEAD` | Get HEAD line origin | `trackHeadToWorkTree()` (gl:cmd/git-glfix/main.go#L1380) |
+| `git blame` (no ref) | Get worktree blame | `trackHeadToWorkTree()` (gl:cmd/git-glfix/main.go#L1380) |
+| `git log --reverse` | Find next commit | `recoverLostLine()` (gl:cmd/git-glfix/main.go#L1218) |
+| `git diff -U0` | Get line-level diff | `recoverLostLine()` (gl:cmd/git-glfix/main.go#L1273) |
 
 ## Heuristic Recovery
 
 When `git blame --reverse` loses track of a line (deleted), the tool attempts heuristic recovery
-(gl:cmd/git-glfix/main.go#L1032):
+(gl:cmd/git-glfix/main.go#L1218):
 
 1. Find the commit where the line was last seen
 2. Get the diff between that commit and the next
 3. Extract deleted and added lines in the same hunk
-4. Calculate similarity scores using Levenshtein distance (gl:cmd/git-glfix/main.go#L1411)
+4. Calculate similarity scores using Levenshtein distance (gl:cmd/git-glfix/main.go#L1649)
 5. If best match > 60% similarity, continue tracking from new line
 
 This handles cases like:
@@ -89,7 +89,7 @@ Test case: TC-018 (gl:docs/dev/git-glfix/test-cases.md#L130)
 
 ## Data Structures
 
-### Snapshot (gl:cmd/git-glfix/main.go#L54)
+### Snapshot (gl:cmd/git-glfix/main.go#L57)
 
 ```go
 type Snapshot struct {
@@ -100,7 +100,7 @@ type Snapshot struct {
 }
 ```
 
-### Link (gl:cmd/git-glfix/main.go#L63)
+### Link (gl:cmd/git-glfix/main.go#L66)
 
 ```go
 type Link struct {
@@ -112,7 +112,7 @@ type Link struct {
 }
 ```
 
-### UpdateResult (gl:cmd/git-glfix/main.go#L98)
+### UpdateResult (gl:cmd/git-glfix/main.go#L103)
 
 ```go
 type UpdateResult struct {
