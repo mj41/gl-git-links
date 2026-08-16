@@ -119,9 +119,9 @@ The test runner resets to clean git state before each sub-test.
 
 | Concept | Spec | Implementation |
 |---------|------|----------------|
-| Link discovery | gl:docs/spec/git-glfix/overview.md#L26 | gl:cmd/git-glfix/main.go#L860 |
-| Origin determination | gl:docs/spec/git-glfix/overview.md#L36 | gl:cmd/git-glfix/main.go#L1159 |
-| Line tracking | gl:docs/spec/git-glfix/overview.md#L41 | gl:cmd/git-glfix/main.go#L1176 |
-| Incremental tracking | gl:docs/spec/git-glfix/incremental-tracking.md#L1 | gl:cmd/git-glfix/main.go#L652 |
-| Snapshot selection | gl:docs/spec/git-glfix/incremental-tracking.md#L100 | gl:cmd/git-glfix/main.go#L603 |
-| Path resolution | gl:docs/spec/gl-spec.md#L37 | gl:cmd/git-glfix/main.go#L934 |
+| Link discovery | gl:docs/spec/git-glfix/overview.md#L26 | gl:cmd/git-glfix/main.go#L954 |
+| Origin determination | gl:docs/spec/git-glfix/overview.md#L36 | gl:cmd/git-glfix/main.go#L1179 |
+| Line tracking | gl:docs/spec/git-glfix/overview.md#L41 | gl:cmd/git-glfix/main.go#L1196 |
+| Incremental tracking | gl:docs/spec/git-glfix/incremental-tracking.md#L1 | gl:cmd/git-glfix/main.go#L657 |
+| Snapshot selection | gl:docs/spec/git-glfix/incremental-tracking.md#L100 | gl:cmd/git-glfix/main.go#L608 |
+| Path resolution | gl:docs/spec/gl-spec.md#L37 | gl:cmd/git-glfix/main.go#L954 |
