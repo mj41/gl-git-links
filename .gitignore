@@ -1,0 +1,6 @@
+# Build outputs
+/git-glfix
+/git-glfix-test
+
+# Temp
+/temp/*
