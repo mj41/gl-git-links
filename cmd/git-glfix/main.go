@@ -198,6 +198,11 @@ Options:
     --verbose          Show detailed tracking information
     --json             Output in JSON format
     --update-modified  Update links even if source file has uncommitted changes
+    --version          Print version, commit and build information
+    --help             Print this help
+
+A link may address a single line (#L10) or a range (#L10-L20). Both ends of a
+range are tracked, and --json reports them as old_end_line and new_end_line.
 
 Commands:
     status      Show repository and snapshot status
@@ -1548,11 +1553,18 @@ func reportResults(results []UpdateResult) {
 
 func reportJSON(results []UpdateResult) {
 	type JSONResult struct {
-		File       string `json:"file"`
-		Line       int    `json:"line"`
-		Target     string `json:"target"`
-		OldLine    int    `json:"old_line"`
-		NewLine    int    `json:"new_line"`
+		File    string `json:"file"`
+		Line    int    `json:"line"`
+		Target  string `json:"target"`
+		OldLine int    `json:"old_line"`
+		NewLine int    `json:"new_line"`
+		// Ranges (#L10-L20) track both ends, but only the start reached
+		// the JSON — the end survived solely inside the human-readable message,
+		// as "L2-L4 -> L4-L6". Anything consuming --json, the test harness
+		// included, could see a range move but not where it moved to. Omitted
+		// for single-line links, which have no end.
+		OldEndLine int    `json:"old_end_line,omitempty"`
+		NewEndLine int    `json:"new_end_line,omitempty"`
 		Status     string `json:"status"`
 		Message    string `json:"message,omitempty"`
 		ModPercent int    `json:"mod_percent,omitempty"`
@@ -1566,6 +1578,8 @@ func reportJSON(results []UpdateResult) {
 			Target:     r.Link.TargetFile,
 			OldLine:    r.OldLine,
 			NewLine:    r.NewLine,
+			OldEndLine: r.OldEndLine,
+			NewEndLine: r.NewEndLine,
 			Status:     r.Status,
 			Message:    r.Message,
 			ModPercent: r.ModPercent,

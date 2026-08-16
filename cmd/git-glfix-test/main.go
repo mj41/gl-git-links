@@ -82,12 +82,25 @@ func main() {
 	repoPath, _ = filepath.Abs(repoPath)
 	fixToolPath, _ = filepath.Abs(fixToolPath)
 
-	var err error
-	if testCache {
-		err = runCacheTests()
-	} else {
-		err = run()
+	// Both modes check out old commits and let git-glfix rewrite links in the
+	// working tree, so the repo has to be disposable — and it has to START
+	// clean, or the restore below cannot tell our mess from the operator's
+	// work-in-progress and would discard both.
+	if err := requireCleanRepo(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
 	}
+
+	// The restore is deferred inside a closure, not in main: os.Exit runs no
+	// deferred functions, so a `defer restoreRepo()` up here would skip exactly
+	// the runs that end in failure — the ones most likely to leave a mess.
+	err := func() error {
+		defer restoreRepo()
+		if testCache {
+			return runCacheTests()
+		}
+		return run()
+	}()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -478,10 +491,8 @@ func runCacheTests() error {
 		}
 	}
 
-	// Cleanup: return to main and clear cache
-	exec.Command("git", "-C", repoPath, "checkout", "--quiet", "main").Run()
-	clearCache()
-
+	// Restoring is main()'s deferred job now, so it happens on every exit path
+	// rather than only when the tests run to completion.
 	fmt.Printf("\n========================================\n")
 	fmt.Printf("Cache Tests: %d passed, %d failed\n", passed, failed)
 
@@ -489,6 +500,37 @@ func runCacheTests() error {
 		return fmt.Errorf("%d cache tests failed", failed)
 	}
 	return nil
+}
+
+// requireCleanRepo refuses to run against a repo with uncommitted work.
+//
+// The harness is destructive by nature: it checks out historical commits and
+// runs git-glfix, which rewrites gl: links in place. Refusing up front is what
+// makes restoreRepo safe to be blunt about — anything modified afterwards was
+// modified by us.
+func requireCleanRepo() error {
+	out, err := exec.Command("git", "-C", repoPath, "status", "--porcelain").Output()
+	if err != nil {
+		return fmt.Errorf("%s is not a usable git repository: %w", repoPath, err)
+	}
+	if len(bytes.TrimSpace(out)) > 0 {
+		return fmt.Errorf(
+			"%s has uncommitted changes; this harness rewrites files there and would discard them.\n"+
+				"Commit or stash first:\n%s", repoPath, out)
+	}
+	return nil
+}
+
+// restoreRepo puts the test repo back on main with no working-tree changes.
+//
+// The cache tests used to end with a plain `git checkout main`, which moves the
+// branch but carries modified files along with it — so a run left the fixture
+// repo dirty, with link edits nobody made on purpose. Discarding is only
+// correct because requireCleanRepo proved there was nothing to lose.
+func restoreRepo() {
+	exec.Command("git", "-C", repoPath, "checkout", "--quiet", "--force", "main").Run()
+	exec.Command("git", "-C", repoPath, "checkout", "--quiet", "--", ".").Run()
+	clearCache()
 }
 
 // clearCache removes all snapshots from the test repo

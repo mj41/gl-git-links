@@ -14,6 +14,8 @@ When a link to a file line, such as `gl:docs/spec/gl-spec.md#L59`, is added, the
 
 How? When a link is added and committed to the main repository branch, it is considered valid. Subsequently, lines may be added or removed before the linked line. Since the git history tracks when the link was added and when lines were modified, the correct line number for the link can be calculated.
 
+A link may also address a range, such as `gl:docs/spec/gl-spec.md#L59-L74`. Both ends are tracked independently, so the range moves when lines are inserted above it and widens or narrows when lines are inserted or deleted inside it.
+
 **Command-line tool:**
 - Source: [cmd/git-glfix/main.go](cmd/git-glfix/main.go)
 - Documentation: [docs/git-glfix.md](docs/git-glfix.md)

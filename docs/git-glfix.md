@@ -18,6 +18,25 @@ git-glfix tracks and updates gl: links (e.g., `gl:path/to/file#L123`) as files c
 - `--verbose` – Show detailed tracking information.
 - `--json` – Output results in JSON format.
 - `--update-modified` – Update links even if source files have uncommitted changes.
+- `--version` – Print version, commit and build information.
+- `--help` – Print usage.
+
+## Line ranges
+
+A link may address a single line or a range of lines:
+
+```
+gl:docs/spec/gl-spec.md#L59        single line
+gl:docs/spec/gl-spec.md#L59-L74    range
+```
+
+Both ends of a range are tracked independently, so a range widens or narrows as
+lines are inserted or deleted inside it, and moves as a whole when lines are
+added above it. A range whose start or end line is deleted is reported as
+broken, like a single-line link.
+
+With `--json`, a range reports `old_end_line` and `new_end_line` alongside
+`old_line` and `new_line`. Both are omitted for single-line links.
 
 ## Commands
 
